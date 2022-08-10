@@ -13,7 +13,7 @@ var RoleUser string = "ROLE_USER"
 var RoleReviewer string = "ROLE_REVIEWER"
 
 // 目录限制
-var prefix = "/Users/xingzheng"
+var prefix = "/root"
 var IMAGE_DIC = prefix + "/labelprojectdata/image/"
 var IMAGE_S_DIC = prefix + "/labelprojectdata/images/"
 var IMAGE_L_DIC = prefix + "/labelprojectdata/imagel/"

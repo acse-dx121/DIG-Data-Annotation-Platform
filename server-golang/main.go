@@ -104,7 +104,7 @@ func main() {
 	defer cache.Close()
 
 	gin.SetMode(gin.ReleaseMode)
-	r := CollectRoute(gin.New(), "http://127.0.0.1:9999")
+	r := CollectRoute(gin.New(), "http://121.36.81.191:9999")
 
 	port := viper.GetString("server.port")
 	if port != "" {

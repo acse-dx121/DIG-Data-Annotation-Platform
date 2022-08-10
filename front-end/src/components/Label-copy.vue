@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div style="width:100%;height:100%;" v-loading="loading">
     <el-page-header class="page-header" @back="goBack" content="标记"></el-page-header>
     <div class="label-core" tabindex="1">
@@ -14,6 +14,7 @@
               <span class="iconfont icon-yidong"></span>
             </li>
           </a>
+          <!--原始版本
           <a
             :style="{ display: type == 3 || (type == 4 && this.labelIndex != this.label.length) ? 'block' : 'none' }"
             class="polygon"
@@ -24,6 +25,18 @@
               <span class="iconfont icon-duobianxing"></span>
             </li>
           </a>
+          -->
+          <a
+            :style="{ display: type==2 || type == 3 || (type == 4 && this.labelIndex != this.label.length) ? 'block' : 'none' }"
+            class="polygon"
+            title="添加多边形区域(Q)"
+            href="javascript:void(0)"
+          >
+            <li>
+              <span class="iconfont icon-duobianxing"></span>
+            </li>
+          </a>
+
           <a
             :style="{ display: type == 2 || (type == 4 && this.labelIndex != this.label.length) ? 'block' : 'none' }"
             class="rectangle"
@@ -66,7 +79,16 @@
               <span class="iconfont icon-suoxiao"></span>
             </li>
           </a>
+
           <div class="label-divider"></div>
+          <a
+            :style="{ display: account.group == 3 ? 'block' : 'none' }"
+            @click="showDelete"
+            class="delete" title="删除" href="javascript:void(0)" >
+            <li>
+              <span class="el-icon-circle-close"></span>
+            </li>
+          </a>
           <a class="save" title="保存(Ctrl+S)" href="javascript:void(0)">
             <li>
               <span class="iconfont icon-baocun"></span>
@@ -75,6 +97,7 @@
           <a
             :style="{ display: account.group == 2 || account.group == 3 ? 'block' : 'none' }"
             class="confirm"
+            @click="showComfirm"
             title="确认该版本(Ctrl+C)"
             href="javascript:void(0)"
           >
@@ -98,22 +121,36 @@
       <div class="label-area">
         <div class="label-main">
           <img v-on:load="loadMark" :src="img" alt srcset />
+
           <canvas></canvas>
-          <svg class="label-svg" xmlns="http://www.w3.org/2000/svg" version="1.1" />
+          <svg class="label-svg" xmlns="http://www.w3.org/2000/svg" version="1.1" > </svg>
+
         </div>
       </div>
       <div class="label-popup" style="display: none;">
-        <select class="label-label"></select>
+        <select class="label-label" multiple></select>
+        <!-- <el-button type="primary" disabled>多选</el-button> -->
+        <!-- <el-select class="multi-label-label" v-model="value1" multiple placeholder="请选择">
+          <el-option
+            v-for="item in label"
+            :key="item.id"
+            :label="item.label"
+            :value="item.id">
+          </el-option>
+        </el-select> -->
+        
         <div class="label-checkbox">
           <input type="checkbox" class="label-crowd" value="iscrowd" />
           <label for="iscrowd">使用RLE格式</label>
         </div>
         <textarea class="label-desc" rows="5" placeholder="描述"></textarea>
-        <button class="label-save-label" type="button">保存</button>
+        <button class="label-save-label" @click="print" type="button">保存</button>
         <button class="label-delete-label" type="button">删除</button>
+
       </div>
 
       <div class="label-list">
+
         <el-collapse :style="{ display: account.group != 1 ? 'block' : 'none' }" v-model="penddingUserActive" class="label-user">
           <el-collapse-item class="label-user-item" title="待审核用户列表" name="user">
             <el-menu @select="penddingUserSelect" :default-active="activeIndex" class="el-menu-vertical-demo">
@@ -123,11 +160,27 @@
             </el-menu>
           </el-collapse-item>
         </el-collapse>
-        <ul class="label-list-ul"></ul>
+
+        <ul class="label-list-ul" ></ul>
+
+
+        <el-card  body-style="{ padding: '30px'}" shadow="always" class="box-card">
+          <div v-if="task.list[task.index].userConfirmId != null" class="yishenghe">
+            <h3>已审核</h3>
+          </div>
+          <div v-else class="weishenghe">
+            <h3>未审核</h3>
+          </div>
+        </el-card>
+
+
+
+
       </div>
+
     </div>
     <!-- 类型 -->
-    <el-dialog title="添加分类标签" :visible.sync="classify.dialogVisible" width="30%">
+    <!-- <el-dialog title="添加分类标签" :visible.sync="classify.dialogVisible" width="30%">
       <el-form :inline="true">
         <el-form-item label="标签" prop="group">
           <el-select v-model="classify.select" multiple collapse-tags style="margin-left: 20px;" placeholder="请选择标签">
@@ -135,15 +188,16 @@
           </el-select>
         </el-form-item>
       </el-form>
+
       <span slot="footer" class="dialog-footer">
         <el-button @click="classify.dialogVisible = false">取 消</el-button>
         <el-button type="primary" @click="classifyAdd">确 定</el-button>
       </span>
-    </el-dialog>
+    </el-dialog> -->
   </div>
 </template>
 <script>
-import { getImg, getPendingUserList, setFinalVersion, saveLabel } from "@/models/Task.js";
+import { getImg, getPendingUserList, setFinalVersion, saveLabel, deleteImageById} from "@/models/Task.js";
 import { LabelCore } from "@/assets/js/label.core.js";
 import { HOST as Host, ajaxImg } from "@/models/Service.js";
 import { getImgList } from "@/models/Task.js";
@@ -154,9 +208,13 @@ export default {
     return {
       img: "",
       label: [],
+      select: [],
+      value1: [],
       name: "",
       area: [],
       count: 0,
+      showComfirmed: true,
+      showDeleted:false,
       penddingUserList: [],
       isReviewer: false,
       loading: true,
@@ -178,8 +236,24 @@ export default {
         select: [],
         dialogVisible: false
       },
-      labelIndex: 0
-    };
+      labelIndex: 0,
+      options: [{
+        value: '选项1',
+        label: '黄金糕'
+      }, {
+        value: '选项2',
+        label: '双皮奶'
+      }, {
+        value: '选项3',
+        label: '蚵仔煎'
+      }, {
+        value: '选项4',
+        label: '龙须面'
+      }, {
+        value: '选项5',
+        label: '北京烤鸭'
+      }]
+    }
   },
   watch: {
     id() {
@@ -187,19 +261,35 @@ export default {
     }
   },
   methods: {
-    classifyClick() {
-      this.classify.label = [];
-      for (const item of this.label) {
-        this.classify.label.push({ label: item.label, value: item.id });
-      }
-      this.classify.dialogVisible = true;
+    print(){
+      console.log(this.options.value1);
+      console.log(this.label);
+      console.log(this.value1);
     },
-    classifyAdd() {
-      this.labelCore.clean();
-      for (const id of this.classify.select) {
-        this.labelCore.setClassify(id);
-      }
-      this.classify.dialogVisible = false;
+    showDelete(){
+      console.log("delete");
+      this.loadMark();
+      this.$confirm("是否删除该图片？", "提示", {confirmButtonText: "确定", cancelButtonText: "取消", type: "info"})
+        .then(() => {
+            this.deleteImageById();
+          // this.setFinalVersion();
+        })
+        .catch(() => {
+        });
+
+    },
+    showComfirm(){
+      console.log("func");
+      this.$confirm("是否确定该版本为最终版本？", "提示", {confirmButtonText: "确定", cancelButtonText: "取消", type: "info"})
+        .then(() => {
+          this.setFinalVersion();
+          // this.setFinalVersion();
+        })
+        .catch(() => {
+        });
+    },
+    format(percentage) {
+      return percentage === 100 ? '满' : `${percentage}%`;
     },
     load(hasCom) {
       if (this.account.group == 1) {
@@ -242,6 +332,7 @@ export default {
           let templabel = "";
           for (const item of data.data.datas) {
             let points = [];
+
             for (const point of item.point) {
               points.push([point.x, point.y]);
             }
@@ -306,19 +397,23 @@ export default {
       this.labelCore = new LabelCore(
         document.querySelector(".label-core"),
         this.label,
+        this.value1,
         this.area,
         data => {
           this.saveLabelArea(data);
         },
         data => {
-          this.$confirm("是否确定该版本为最终版本？", "提示", { confirmButtonText: "确定", cancelButtonText: "取消", type: "info" })
-            .then(() => {
-              this.setFinalVersion();
-            })
-            .catch(() => {});
+          // this.$confirm("是否确定该版本为最终版本？", "提示", {confirmButtonText: "确定", cancelButtonText: "取消", type: "info"})
+          //   .then(() => {
+          //     this.setFinalVersion();
+          //     // this.setFinalVersion();
+          //   })
+          //   .catch(() => {
+          //   });
         },
         //addCB
-        () => {},
+        () => {
+        },
         //removeCB
         () => {
           if (this.type == 4) {
@@ -376,6 +471,21 @@ export default {
           this.loading = false;
         });
     },
+    deleteImageById(){
+      this.loading = true;
+      deleteImageById(parseInt(this.id), this.penddingUserSelectId, this.account)
+        .then(() => {
+          this.$message({ type: "success", message: "删除成功" });
+          this.next();
+        })
+        .catch(data => {
+          this.$message({ type: "error", message: `删除失败，${data.message}(${data.code})` });
+        })
+        .then(() => {
+          this.loading = false;
+        });
+
+    },
     //保存
     saveLabelArea(data) {
       this.loading = true;
@@ -412,6 +522,7 @@ export default {
     //获取任务图片列表，确定
     getImageList(isNew) {
       return new Promise((resolve, reject) => {
+
         console.log(this.task.page);
         getImgList(this.task.id, this.task.page)
           .then(data => {
@@ -436,16 +547,32 @@ export default {
     next() {
       let task = this.task;
       if (task.list.length - 1 == task.index) {
+        console.log("这是这个页面最后一张");
         if (task.page == task.total) {
           this.$message({ type: "warning", message: `已经是最后一张` });
           return;
         }
+        console.log(task.page);
         task.page++;
-        task.index = 0;
-        this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
+        console.log(task.page);
+        task.index = 0 ;
+        console.log(task.list[task.index].imageId);
+        getImgList(this.task.id, this.task.page)
+          .then(data => {
+            let list = data.data.images;
+            this.task.list = list;
+            console.log("success");
+            console.log(task.list[task.index].imageId);
+            console.log(task.list[task.index].userConfirmId);
+            this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
+          });
+        console.log(task.list[task.index].imageId);
+        console.log(task.list);
+        //this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
       } else {
         console.log(task.list);
         ++task.index;
+        console.log(task.list[task.index].imageId);
         this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
       }
     },
@@ -456,9 +583,20 @@ export default {
           this.$message({ type: "warning", message: `已经是第一张` });
           return;
         }
+        console.log(task.page);
         task.page--;
-        task.index = task.list.length - 1;
-        this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
+        console.log(task.page);
+
+        getImgList(this.task.id, this.task.page)
+          .then(data => {
+            let list = data.data.images;
+            this.task.list = list;
+            task.index = task.list.length - 1;
+            console.log("success");
+            console.log(task.list[task.index].imageId);
+            this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
+          });
+
       } else {
         --task.index;
         this.$router.push(`/img/${task.list[task.index].imageId}/${task.id}/${this.type}/${task.name}/${task.page}`);
@@ -471,7 +609,6 @@ export default {
 };
 </script>
 <style src="@/assets/css/label.core.css"></style>
-
 
 
 

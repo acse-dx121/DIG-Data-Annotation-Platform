@@ -3,7 +3,7 @@
 //const HOST = "http://47.100.254.133:23333";
 //const HOST="http://47.95.0.117:8887";
 // const HOST = "http://47.95.0.117:6005";
-const HOST="http://127.0.0.1:9998";
+const HOST="http://121.36.81.191:9998";
 //upload image files(*.png,*.jpe?g)
 const AppendFileAPI = HOST + "/api/appendFile";
 //upload compressed file(*.zip)
